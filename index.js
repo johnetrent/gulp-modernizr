@@ -73,7 +73,16 @@ module.exports = function (fileName, opt) {
 
 		// Create a promise and call customizr
 		var promise = new Promise(function(resolve, reject) {
+
+			if (opt.quiet) {
+				var write = process.stdout.write;
+				process.stdout.write = gutil.noop;
+			}
+
 			customizr(opt, function (data) {
+
+				if (opt.quiet)
+					process.stdout.write = write;
 
 				// Sanity check
 				if (!data.result) {
