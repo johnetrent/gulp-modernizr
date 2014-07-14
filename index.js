@@ -1,17 +1,18 @@
-var path = require("path"),
-	gutil = require("gulp-util"),
-	through = require("through2"),
-	customizr = require("customizr");
+'use strict';
+var path = require('path');
+var gutil = require('gulp-util');
+var through = require('through');
+var Promise = require('bluebird');
+var customizr = require('customizr');
 
 module.exports = function (fileName, opt) {
-	"use strict";
 
 	// Set some defaults
-	var PLUGIN_NAME = "gulp-modernizr",
-		DEFAULT_FILE_NAME = "modernizr.js";
+	var PLUGIN_NAME = 'gulp-modernizr';
+	var DEFAULT_FILE_NAME = 'modernizr.js';
 
 	// Ensure fileName exists
-	if (typeof fileName === "undefined") {
+	if (typeof fileName === 'undefined') {
 		fileName = opt ? opt.dest : DEFAULT_FILE_NAME;
 	} else if (typeof fileName === typeof {}) {
 		opt = fileName;
@@ -37,24 +38,21 @@ module.exports = function (fileName, opt) {
 	opt.uglify = false;
 
 	// Save first file for metadata purposes
-	var firstFile;
+	var firstFile = null;
 
-	function storeBuffers(file, enc, callback) {
+	function storeBuffers(file) {
 
 		// Return if null
 		if (file.isNull()) {
-			stream.push(file);
-			return callback();
+			return;
 		}
 
 		// No stream support (yet?)
 		if (file.isStream()) {
-			stream.emit("error", new gutil.PluginError({
+			stream.emit('error', new gutil.PluginError({
 				plugin: PLUGIN_NAME,
-				message: "Streaming not supported"
+				message: 'Streaming not supported'
 			}));
-
-			return callback();
 		}
 
 		// Set first file
@@ -65,40 +63,48 @@ module.exports = function (fileName, opt) {
 		// Save buffer for later use
 		opt.files.src.push(file);
 
-		return callback();
 	}
 
 	function generateModernizr(callback) {
+
 		if (opt.files.src.length === 0) {
-			return callback();
+			stream.emit('end');
 		}
 
-		// Call customizr
-		customizr(opt, function (data) {
+		// Create a promise and call customizr
+		var promise = new Promise(function(resolve, reject) {
+			customizr(opt, function (data) {
 
-			// Sanity check
-			if (!data.result) {
-				return stream.emit("error", new gutil.PluginError({
-					plugin: PLUGIN_NAME,
-					message: "No data returned"
-				}));
-			}
-
-			// Save result
-			var file = new gutil.File({
-				path: path.join(firstFile.base, fileName),
-				base: firstFile.base,
-				cwd: firstFile.cwd,
-				contents: new Buffer(data.result)
+				// Sanity check
+				if (!data.result) {
+					reject(
+						stream
+						.emit('error', new gutil.PluginError({
+						   plugin: PLUGIN_NAME,
+						   message: 'No data returned'
+						}))
+					);
+				}
+				else {
+					resolve(
+						// Save result
+						new gutil.File({
+							path: path.join(firstFile.base, fileName),
+							base: firstFile.base,
+							cwd: firstFile.cwd,
+							contents: new Buffer(data.result)
+						})
+					);
+				}
 			});
+		});
 
-			// Pass data along
-			stream.push(file);
-
-			return callback();
+		return promise.then(function(result) {
+			stream.emit('data', result);
+			stream.emit('end');
 		});
 	}
 
-	var stream = through.obj(storeBuffers, generateModernizr);
+	var stream = through(storeBuffers, generateModernizr);
 	return stream;
 };

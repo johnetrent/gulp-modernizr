@@ -22,14 +22,15 @@
   },
   "homepage": "https://github.com/doctyper/gulp-modernizr",
   "dependencies": {
+    "bluebird": "^2.2.1",
     "customizr": "https://github.com/doctyper/customizr/tarball/develop",
-    "gulp-util": "~2.2.10",
-    "through2": "~0.4.0"
+    "gulp-util": "^2.2.20",
+    "through": "^2.3.4"
   },
   "devDependencies": {
-    "event-stream": "~3.1.0",
-    "assert": "~1.1.0",
-    "mocha": "~1.17.0",
-    "gulp": "~3.5.1"
+    "assert": "^1.1.1",
+    "event-stream": "^3.1.5",
+    "gulp": "^3.8.6",
+    "mocha": "^1.20.1"
   }
 }
